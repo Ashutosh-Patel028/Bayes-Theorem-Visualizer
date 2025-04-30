@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bayes' Theorem Visualizer</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+        background-color: #f9fafb;
+      }
+      .slider {
+        -webkit-appearance: none;
+        height: 8px;
+        border-radius: 4px;
+        background: #d1d5db;
+        outline: none;
+        width: 100%;
+      }
+      .slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #3b82f6;
+        cursor: pointer;
+        border: 2px solid white;
+      }
+      .slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #3b82f6;
+        cursor: pointer;
+        border: 2px solid white;
+      }
+      .box-model {
+        position: relative;
+        width: 300px;
+        height: 300px;
+        border: 1px solid #ccc;
+        background-color: #111;
+      }
+      .box-section-h {
+        position: absolute;
+        background-color: rgba(59, 130, 246, 0.7);
+      }
+      .box-section-eh {
+        position: absolute;
+        background-color: rgba(52, 211, 153, 0.8);
+      }
+      .box-label {
+        color: white;
+        position: absolute;
+        font-weight: bold;
+        font-size: 14px;
+      }
+      .prob-bar {
+        position: relative;
+        height: 40px;
+        margin: 10px 0;
+        border-radius: 4px;
+        background-color: #e5e7eb;
+      }
+      .prob-bar-fill {
+        height: 100%;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+      }
+      .prob-bar-prior {
+        background-color: #10b981;
+      }
+      .prob-bar-posterior {
+        background-color: #3b82f6;
+      }
+      footer {
+        background-color: #f1f1f1;
+        text-align: center;
+        padding: 15px;
+        font-size: 16px;
+        color: #333;
+      }
+    </style>
+  </head>
+  <body class="p-6">
+    <div class="max-w-6xl mx-auto">
+      <h1 class="text-3xl font-bold text-center mb-8">
+        Bayes' Theorem Visualizer
+      </h1>
+
+      <div class="flex flex-col md:flex-row gap-8">
+        <!-- Left side: Sliders -->
+        <div class="w-full md:w-1/2 bg-white p-6 rounded-lg shadow">
+          <div class="mb-6">
+            <div class="flex justify-between mb-2">
+              <label class="font-medium text-gray-700">Prior P(H):</label>
+              <span id="prior-value" class="font-medium">0.50</span>
+            </div>
+            <input
+              type="range"
+              min="0.01"
+              max="0.99"
+              step="0.01"
+              value="0.5"
+              class="slider"
+              id="priorSlider"
+            />
+          </div>
+
+          <div class="mb-6">
+            <div class="flex justify-between mb-2">
+              <label class="font-medium text-gray-700"
+                >Likelihood P(E|H):</label
+              >
+              <span id="likelihood-value" class="font-medium">0.80</span>
+            </div>
+            <input
+              type="range"
+              min="0.01"
+              max="0.99"
+              step="0.01"
+              value="0.8"
+              class="slider"
+              id="likelihoodSlider"
+            />
+          </div>
+
+          <div class="mb-6">
+            <div class="flex justify-between mb-2">
+              <label class="font-medium text-gray-700">P(E|¬H):</label>
+              <span id="falsePosRate-value" class="font-medium">0.20</span>
+            </div>
+            <input
+              type="range"
+              min="0.01"
+              max="0.99"
+              step="0.01"
+              value="0.2"
+              class="slider"
+              id="falsePosRateSlider"
+            />
+          </div>
+
+          <div class="bg-blue-100 p-4 rounded-md">
+            <div class="flex justify-between items-center">
+              <span class="font-medium text-gray-800">Posterior P(H|E):</span>
+              <span id="posterior-value" class="text-xl font-bold text-blue-600"
+                >0.80</span
+              >
+            </div>
+          </div>
+
+          <div class="mt-6 bg-gray-100 p-4 rounded-md">
+            <h3 class="font-medium mb-2">Bayes' Theorem Formula:</h3>
+            <p class="text-sm text-gray-700 mb-2">
+              P(H|E) = [P(E|H) × P(H)] / [P(E|H) × P(H) + P(E|¬H) × P(¬H)]
+            </p>
+            <p class="text-sm text-gray-700">Where:</p>
+            <ul class="text-sm text-gray-700 list-disc pl-5 mt-1">
+              <li>P(H) = Prior probability of hypothesis H</li>
+              <li>P(E|H) = Likelihood of evidence E given H is true</li>
+              <li>P(E|¬H) = Probability of evidence E given H is false</li>
+              <li>P(H|E) = Posterior probability of H given evidence E</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Right side: Visualizations -->
+        <div class="w-full md:w-1/2 bg-white p-6 rounded-lg shadow">
+          <h2 class="text-xl font-bold mb-4">Box Model Visualization</h2>
+          <div class="flex justify-center mb-6">
+            <div class="box-model" id="boxModel">
+              <!-- Box sections will be created by JavaScript -->
+            </div>
+          </div>
+
+          <h2 class="text-xl font-bold mb-4">Probability Comparison</h2>
+          <div>
+            <div class="mb-1 flex justify-between">
+              <span class="text-sm font-medium text-gray-700">Prior P(H):</span>
+              <span id="prior-display" class="text-sm font-medium">0.50</span>
+            </div>
+            <div class="prob-bar">
+              <div
+                class="prob-bar-fill prob-bar-prior"
+                id="priorBar"
+                style="width: 50%"
+              >
+                0.50
+              </div>
+            </div>
+
+            <div class="mb-1 mt-4 flex justify-between">
+              <span class="text-sm font-medium text-gray-700"
+                >Posterior P(H|E):</span
+              >
+              <span id="posterior-display" class="text-sm font-medium"
+                >0.80</span
+              >
+            </div>
+            <div class="prob-bar">
+              <div
+                class="prob-bar-fill prob-bar-posterior"
+                id="posteriorBar"
+                style="width: 80%"
+              >
+                0.80
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-6 bg-gray-100 p-4 rounded-md">
+            <h3 class="font-medium mb-2">Interpretation:</h3>
+            <p class="text-sm text-gray-700" id="interpretation">
+              With a prior probability of 50% for hypothesis H, a likelihood of
+              80%, and a false positive rate of 20%, the posterior probability
+              of H given evidence E is 80%.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <footer>Made with ❤️ by Ashutosh</footer>
+    <script>
+      // Get all the elements we need to work with
+      const priorSlider = document.getElementById("priorSlider");
+      const likelihoodSlider = document.getElementById("likelihoodSlider");
+      const falsePosRateSlider = document.getElementById("falsePosRateSlider");
+
+      const priorValue = document.getElementById("prior-value");
+      const likelihoodValue = document.getElementById("likelihood-value");
+      const falsePosRateValue = document.getElementById("falsePosRate-value");
+      const posteriorValue = document.getElementById("posterior-value");
+
+      const priorDisplay = document.getElementById("prior-display");
+      const posteriorDisplay = document.getElementById("posterior-display");
+
+      const priorBar = document.getElementById("priorBar");
+      const posteriorBar = document.getElementById("posteriorBar");
+
+      const boxModel = document.getElementById("boxModel");
+      const interpretation = document.getElementById("interpretation");
+
+      // Initialize the visualization
+      updateVisualization();
+
+      // Add event listeners to the sliders
+      priorSlider.addEventListener("input", updateVisualization);
+      likelihoodSlider.addEventListener("input", updateVisualization);
+      falsePosRateSlider.addEventListener("input", updateVisualization);
+
+      // Function to calculate Bayes' Theorem
+      function calculateBayes(prior, likelihood, falsePosRate) {
+        const priorNot = 1 - prior;
+        const numerator = likelihood * prior;
+        const denominator = likelihood * prior + falsePosRate * priorNot;
+        return numerator / denominator;
+      }
+
+      // Function to update all visualizations based on current slider values
+      function updateVisualization() {
+        // Get current values from sliders
+        const prior = parseFloat(priorSlider.value);
+        const likelihood = parseFloat(likelihoodSlider.value);
+        const falsePosRate = parseFloat(falsePosRateSlider.value);
+
+        // Calculate posterior using Bayes' Theorem
+        const posterior = calculateBayes(prior, likelihood, falsePosRate);
+
+        // Update displayed values
+        priorValue.textContent = prior.toFixed(2);
+        likelihoodValue.textContent = likelihood.toFixed(2);
+        falsePosRateValue.textContent = falsePosRate.toFixed(2);
+        posteriorValue.textContent = posterior.toFixed(2);
+
+        // Update probability bars
+        priorDisplay.textContent = prior.toFixed(2);
+        posteriorDisplay.textContent = posterior.toFixed(2);
+
+        priorBar.style.width = `${prior * 100}%`;
+        priorBar.textContent = prior.toFixed(2);
+
+        posteriorBar.style.width = `${posterior * 100}%`;
+        posteriorBar.textContent = posterior.toFixed(2);
+
+        // Update box model
+        updateBoxModel(prior, likelihood, falsePosRate, posterior);
+
+        // Update interpretation text
+        interpretation.textContent =
+          `With a prior probability of ${(prior * 100).toFixed(
+            0
+          )}% for hypothesis H, ` +
+          `a likelihood of ${(likelihood * 100).toFixed(
+            0
+          )}%, and a false positive rate of ${(falsePosRate * 100).toFixed(
+            0
+          )}%, ` +
+          `the posterior probability of H given evidence E is ${(
+            posterior * 100
+          ).toFixed(0)}%.`;
+      }
+
+      // Function to update the box model visualization
+      function updateBoxModel(prior, likelihood, falsePosRate, posterior) {
+        // Clear previous box model
+        boxModel.innerHTML = "";
+
+        const boxWidth = 300;
+        const boxHeight = 300;
+
+        // Create P(H) section
+        const hWidth = prior * boxWidth;
+        const hHeight = boxHeight;
+        const hSection = document.createElement("div");
+        hSection.className = "box-section-h";
+        hSection.style.width = `${hWidth}px`;
+        hSection.style.height = `${hHeight}px`;
+        hSection.style.left = "0";
+        hSection.style.top = "0";
+        boxModel.appendChild(hSection);
+
+        // Create P(E|H) section (within P(H))
+        const ehWidth = hWidth;
+        const ehHeight = likelihood * boxHeight;
+        const ehSection = document.createElement("div");
+        ehSection.className = "box-section-eh";
+        ehSection.style.width = `${ehWidth}px`;
+        ehSection.style.height = `${ehHeight}px`;
+        ehSection.style.left = "0";
+        ehSection.style.top = "0";
+        boxModel.appendChild(ehSection);
+
+        // Create P(E|¬H) section (outside P(H))
+        const enhWidth = boxWidth - hWidth;
+        const enhHeight = falsePosRate * boxHeight;
+        const enhSection = document.createElement("div");
+        enhSection.className = "box-section-eh";
+        enhSection.style.width = `${enhWidth}px`;
+        enhSection.style.height = `${enhHeight}px`;
+        enhSection.style.left = `${hWidth}px`;
+        enhSection.style.top = "0";
+        boxModel.appendChild(enhSection);
+
+        // Add labels
+        const createLabel = (text, left, top, origin = "center") => {
+          const label = document.createElement("div");
+          label.className = "box-label";
+          label.textContent = text;
+          label.style.left = left;
+          label.style.top = top;
+          if (origin === "center") {
+            label.style.transform = "translate(-50%, -50%)";
+          }
+          boxModel.appendChild(label);
+        };
+
+        // P(H) label
+        createLabel(`P(H)`, `${hWidth / 2}px`, `${boxHeight / 2 + 40}px`);
+
+        // P(¬H) label
+        createLabel(
+          `P(¬H)`,
+          `${hWidth + (boxWidth - hWidth) / 2}px`,
+          `${boxHeight / 2 + 40}px`
+        );
+
+        // P(E|H) label
+        createLabel(`P(E|H)`, `${hWidth / 2}px`, `${ehHeight / 2}px`);
+
+        // P(E|¬H) label
+        createLabel(
+          `P(E|¬H)`,
+          `${hWidth + (boxWidth - hWidth) / 2}px`,
+          `${enhHeight / 2}px`
+        );
+
+        // Left brace
+        //createLabel(`{`, `${0}px`, `${boxHeight / 2}px`, "left");
+
+        // Right brace
+        // createLabel(`}`, `${boxWidth}px`, `${boxHeight / 2}px`, "right");
+      }
+    </script>
+  </body>
+</html>
